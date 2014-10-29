@@ -4,7 +4,7 @@
 // @description		Improves the Something Awful forums in various ways.
 // @downloadURL		http://userscripts.org/scripts/source/94231.user.js
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.18
+// @version			1.0.19
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -22,6 +22,10 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.19: 2014-10-29
+ * - Removed spurious debugging info
+ * - Fixed bug where some image titles were not being reg-exp'd correctly
  *
  * V 1.0.18: 2014-06-12
  * - More robust way of detecting whether this is the PYF Quotes thread (i.e. by searching the thread title)
@@ -1356,7 +1360,7 @@ ThreadView = {
 	*/
 	, showImageFilename: function() {
 		var imgs = Util.getNodes('.//img');
-		var re = new RegExp('/([^/]+)$'); // Get the characters after the last forward slash
+		var re = new RegExp('/([^/]+)/?$'); // Get the characters after the last forward slash
 		var i = imgs.length;
 		while(i--) {
 			if(!imgs[i].title) {
@@ -1615,7 +1619,6 @@ ThreadView = {
 	, handle: function () {
 		this.thread_id = parseInt(/threadid=([0-9]+)/.exec(window.location)[1]);
 		this.thread_title = $('.breadcrumbs a.bclast').first().text();
-		console.log(this.thread_title);
 		this.buildPostList();
 
 		Page.addConfigUi(this.getUiRows(), true);
