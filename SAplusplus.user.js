@@ -2,9 +2,9 @@
 // @name			SAplusplus
 // @namespace		SA
 // @description		Improves the Something Awful forums in various ways.
-// @downloadURL		http://userscripts.org/scripts/source/94231.user.js
+// @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.19
+// @version			1.0.20
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -22,6 +22,9 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.20: 2014-11-04
+ * - Changed download URL to something more stable than userscripts.org
  *
  * V 1.0.19: 2014-10-29
  * - Removed spurious debugging info
