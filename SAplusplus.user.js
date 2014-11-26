@@ -4,10 +4,11 @@
 // @description		Improves the Something Awful forums in various ways.
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.20
+// @version			1.0.21
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
+// @grant			GM_addStyle
 // @require			http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js
 // @require			http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js
 // @icon			http://forums.somethingawful.com/favicon.ico
@@ -22,6 +23,10 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.21: 2014-11-25
+ * - Added CSS to improve contrast within [code] tags.
+ * - Remove "Nice!" button in Yospos
  *
  * V 1.0.20: 2014-11-04
  * - Changed download URL to something more stable than userscripts.org
@@ -898,6 +903,11 @@ Page = {
 		}
 	}
 
+	// Give the [code] tag more contrast
+	, fixupCss: function() {
+		GM_addStyle(".postbody code { color: black }");
+	}
+
 	/**
 	* Change the "<" / ">" buttons to "Prev" / "Next" to give a bigger click target
 	*/
@@ -1604,7 +1614,7 @@ ThreadView = {
 				}
 			}
 		}
-		
+
 		for(var i = 0; i < this.posts.length; i++) {
 			var p = this.posts[i];
 			var count = post_id_counts[p.post_id.toString()];
@@ -1616,6 +1626,15 @@ ThreadView = {
 		}
 	}
 
+	// Remove the "Nice!" button from Yospos threads.
+	, removeNiceButton: function() {
+		// We need to wait for the forum JS that adds the button to complete.
+		setTimeout(function() {
+			$('button.nice').parent().remove();
+			}
+			, 50); // Wait 50ms
+	}
+	
 	/**
 	* Run by Page once, immediately after the page loads.
 	*/
@@ -1631,6 +1650,8 @@ ThreadView = {
 		this.showImageFilename();
 		Page.fixPrevNextButtons("pages top");
 		Page.fixPrevNextButtons("pages bottom");
+		Page.fixupCss();
+		this.removeNiceButton();
 		page_changed |= this.removeImagesFromQuotes(3);
 
 		this.addPerPostUi(); // i.e. add Hellban button
@@ -1741,6 +1762,7 @@ UserControlPanel = {
 NewThread = {
 	handle: function() {
 		Smilies.init();
+		Page.fixupCss();
 	}
 };
 
@@ -1753,6 +1775,7 @@ NewThread = {
 ThreadReply = {
 	handle: function() {
 		Smilies.init();
+		Page.fixupCss();
 	}
 };
 
@@ -1765,6 +1788,7 @@ ThreadReply = {
 PrivateMessageEntry = {
 	handle: function() {
 		Smilies.init();
+		Page.fixupCss();
 	}
 };
 
