@@ -208,288 +208,6 @@
  * - Prefs:					Utility class for persisting user preferences.
  */
 /**
- * =================
- * CLASS DEFINITIONS
- * =================
- */
-
-/**
- * Class definition for a SA User
- */
-function User(id, name) {
-	this.id = id;					// Integer - User ID
-	this.name = name;				// String - this user's name
-	this.isHellbanned = false;		// Boolean - true if the user is Hellbanned.
-}
-
-/**
- * Class definition for a thread listed in the Thread List page or the User Control Panel.
- */
-Thread = function(id, row, author_name, author_id, vote_img, num_votes, rating) {
-	var obj = {
-		id: id							// Integer - Unique ID that identifies this Thread
-		, row: row						// DOM "TR" object - Points to the table row in the DOM for this thread
-		, author_name: author_name		// String - User name who made this thread
-		, author_id: author_id			// Integer - User ID of the user who made this thread
-		, visible: true					// Boolean - is this Thread currently visible?
-		, vote_img: vote_img			// null | DOM "IMG" object that contains the 1-5 voting image.
-		, num_votes: num_votes			// Integer - number of people that have voted on this thread
-		, rating: rating				// Integer - average vote value (between 1 and 5)
-
-		/**
-		* Shows or hides a Thread, and marks it as such.
-		* @param Boolean showHide - true to show, false to hide
-		* @return Boolean - whether this changed the actual visiblity or not
-		*/
-		, showHide: function(showHide) {
-			if(showHide != this.visible) {
-				$(this.row).toggle(showHide);
-				this.visible = showHide;
-				return true;
-			}
-			return false;
-		}
-	};
-	return obj;
-};
-
-/**
- * Within the ThreadView page, contains information about a single post
- */
-Post = function(table, postbody, post_id, author_name, author_id) {
-	var obj = {
-		table: table				// DOM "TABLE" object - Points to the Table object in the DOM that contains this post.
-		, postbody: postbody		// DOM "TD" object - Points to the TD object containing the actual post.
-		, post_id: post_id			// Unique ID for each post (assigned by SA server)
-		, author_name: author_name	// String - The name of the user who made this post
-		, author_id: author_id		// Integer - The user ID of the user who made this post
-		, visible: true				// Boolean - is this Post visible?
-		
-		/**
-		 * Shows or hides a Post, and marks it as such.
-		 * @param Boolean showHide - true to show, false to hide
-		 * @return Boolean - whether this changed the actual visiblity or not
-		 */
-		, showHide: function(showHide) {
-			if(showHide != this.visible) {
-				$(this.table).toggle(showHide);
-				this.visible = showHide;
-				return true;
-			}
-			return false;
-		}
-		/**
-		 * Returns true if the Post has an image attachment
-		 * @return Boolean
-		 */
-		, hasImageAttachment: function() {
-			return (Util.getNodes('./p[@class="attachment"]/img', this.postbody).length > 0);
-		}
-
-		/**
-		 * Returns true if the Post contains images (not counting emoticons, not within quoted sections)
-		 * or links.
-		 * @return Boolean
-		 */
-		, containsImagesOrLinks: function() {
-			var images = Util.getNodes('./img', this.postbody);
-			var i = images.length;
-			while(i--) {
-				if(!Util.isEmoticon(images[i])) {
-					return true;
-				}
-			}
-			if(this.hasImageAttachment()) {
-				return true;
-			}
-			var links = Util.getNodes('./a', this.postbody);
-			return (links.length > 0);
-		}
-
-		/**
-		 * Returns true if the Post is "low content", meaning that it doesn't contain any images or text (i.e. just quotes/emoticons)
-		 * @return Boolean
-		 */
-		, isLowContent: function() {
-			var cn = this.postbody.childNodes;
-			var i = cn.length;
-			while(i--) {
-				var node_type = Util.getNodeType(cn[i]);
-				switch(node_type) {
-				case 'image':
-				case 'link':
-				case 'text':
-					return false;
-				}
-			}
-			// Couldn't find any content.
-			return !this.hasImageAttachment();
-		}
-
-		, trimWhitespace: function() {
-			Util.trimWhitespace(this.postbody);
-
-			// Trim all sub quotes
-			var quotes = this.getQuotes();
-			var i = quotes.length;
-			while(i--) {
-				Util.trimWhitespace(quotes[i]);
-			}
-		}
-
-		, getQuotes: function() {
-			return Util.getNodes('.//div[contains(@class, "bbc-block")]/blockquote', this.postbody);
-		}
-
-		/**
-		 * Highlights/De-highlights a post
-		 */
-		, highlight: function(is_enable) {
-			var td = Util.getNodes('.//td', this.table);
-			$(td).attr('style', is_enable ? 'background-color:#EE0' : '');
-		}
-		
-		/**
-		 * @param boolean only_show_images - true if this Post is in an Image Thread
-		 * @param boolean enable_low_content_filtering - true if this Post is in the PYF Quotes thread
-		 * @return boolean - true if the post should be visible, false otherwise
-		 */ 
-		, isVisible: function(only_show_images, enable_low_content_filtering) {
-			// Don't hide posts in the PYF SA Quotes thread
-			if(enable_low_content_filtering && this.isLowContent()) {
-				return false;
-			}
-			// In "Image Threads", hide any posts that don't contain images.
-			if(only_show_images && !this.containsImagesOrLinks()) {
-				return false;
-			}
-
-			// Check for hellbanning here
-			if(Prefs.is_hellbanning_enabled) {
-				if(Users.isHellbanned(this.author_id)) {
-					return false;
-				}
-
-				// If a non-hellbanned user quoted a hellbanned post, then their post MAY be empty now. If so, hide that post.
-				if(/^\s*$/.test(this.postbody.textContent) && !this.containsImagesOrLinks()) {
-					return false;
-				}
-			}
-			return true;
-		}
-		
-		/**
-		 * If a post contains a quote from a Hellbanned user, then strip the quote and any text underneath it (until the end or the next quote).
-		 *
-		 * Note: Because this actually removes content permanently, this is somewhat incompatible with
-		 * the notion that you can toggle showing/hiding hellbanned content with a mouseclick. A better but
-		 * more complex solution would be to shuffle all this content into a DIV, which we can then just show/hide.
-		 *
-		 * @return boolean - true if any changes were made to the post
-		 */
-		, stripHellbannedQuotes: function() {
-			var posted_by_re = new RegExp('^(.+) posted:$');
-			var post_nodes = this.postbody.childNodes;
-			var under_banned_quote = false;
-			var element_ids_to_remove = [];
-			var i;
-			for(i = 0; i < post_nodes.length; i++) {
-				// Is this a quote?
-				var node_type = Util.getNodeType(post_nodes[i]);
-				if(node_type === 'edit') {
-					// There's no text after a "Edited by..." section so end here.
-					break;
-				} else if(node_type === 'quote') {
-					// Is this a quote made by a hellbanned User?
-					var res = post_nodes[i].firstElementChild.textContent.match(posted_by_re); // Determine quotee
-					under_banned_quote = res && Users.isHellbanned(res[1]);
-				}
-				if(under_banned_quote) {
-					element_ids_to_remove.push(i);
-				}
-			}
-			// Remove any quotes and the text underneath it.
-			if(element_ids_to_remove.length) {
-				while(element_ids_to_remove.length) {
-					Util.removeElement(post_nodes[element_ids_to_remove.pop()]);
-				}
-				return true;
-			}
-			return false;
-		}
-	};
-	return obj;
-};
-
-
-/**
- * =================
- * CONTAINER OBJECTS
- * =================
- *
- * The following objects act as namespaces/singletons.
- */
-
-/**
- * ----------------------------------
- * LocalStorage
- * ----------------------------------
- * Various utility functions
- */
-LocalStorage = {
-	/**
-	 * Adds a prefix to any localStorage key name so that we don't stomp on other app's localStorage items.
-	 * @param <string> key - a localStorage key name
-	 * @return <string> the key to use when accessing localStorage
-	 */
-	getKey: function(key) {
-		return '***SA***SAplusplus***' + key;
-	}
-
-	/**
-	 * Returns the string from Firefox's local storage.
-	 *
-	 * @param String key - the name of the value to return
-	 * @param <mixed> def - the default value to return if the key isn't present in the local store. Defaults to null.
-	 * @return - the value of the key in the local store, or default if it isn't present.
-	 */
-	, get: function(key, def) {
-		var value = GM_getValue(this.getKey(key), null);
-		if (null !== value && typeof(value) === 'string') { // Was set in localStorage and looks like it might be JSON.parse-able
-			try {
-				return JSON.parse(value);
-			} catch(err) {
-				// do nothing, drop through to pass back the default.
-			}
-		}
-		// Return the default
-		return (typeof(def) === 'undefined') ? null : def;
-	}
-
-	/**
-	 * Sets the given string into Firefox's local storage.
-	 *
-	 * @param <string> key - the name of the key to store this under
-	 * @param Array|String|Integer|Boolean value - the value of the string to store. NOTE: This MUST be JSON'izeable, i.e. Objects that don't
-	 *                  have toString methods are not supported.
-	 * @return void
-	 */
-	, set: function(key, value) {
-		GM_setValue(this.getKey(key), JSON.stringify(value));
-	}
-
-	/**
-	 * Removes a locally stored string from Firefox's local storage
-	 *
-	 * @param <string> key - the name of the key to remove
-	 * @return void
-	 */
-	, remove: function(key, value) {
-		GM_setValue(this.getKey(key), null);
-	}
-};
-
-/**
  * ----------------------------------
  * Util
  * ----------------------------------
@@ -680,101 +398,64 @@ Util = {
 		}
 		return post_altered;
 	}
-};
-
-/**
+};/**
  * ----------------------------------
- * Prefs
+ * LocalStorage
  * ----------------------------------
- * Handles preference information
+ * Various utility functions
  */
-Prefs = {
-	// boolean - Is hellbanning currently enabled?
-	is_hellbanning_enabled: false
-
-	// array - list of thread_ids that are considered image threads
-	, image_threads: []
-
-	// Boolean - are lowcontent posts filtered?
-	, lowcontentposts_filtering_enabled: false
-
-	// Boolean - are avatars enabled?
-	, avatars_enabled: true
-
-	// Boolean - Is the ThreadView streamlined?
-	, streamline_enabled: false
-
+LocalStorage = {
 	/**
-	 * Adds a thread to the list of those considered "Image threads" (primarily about images)
-	 * @param integer thread_id
+	 * Adds a prefix to any localStorage key name so that we don't stomp on other app's localStorage items.
+	 * @param <string> key - a localStorage key name
+	 * @return <string> the key to use when accessing localStorage
 	 */
-	, addImageThread: function(thread_id) {
-		this.image_threads.push(thread_id);
+	getKey: function(key) {
+		return '***SA***SAplusplus***' + key;
 	}
 
 	/**
-	 * Removes a thread from the list of those considered "Image threads"
-	 * @param integer thread_id
+	 * Returns the string from Firefox's local storage.
+	 *
+	 * @param String key - the name of the value to return
+	 * @param <mixed> def - the default value to return if the key isn't present in the local store. Defaults to null.
+	 * @return - the value of the key in the local store, or default if it isn't present.
 	 */
-	, removeImageThread: function(thread_id) {
-		var i = this.image_threads.length;
-		while(i--) {
-			if(this.image_threads[i] === thread_id) {
-				this.image_threads.splice(i, 1);
-				break;
+	, get: function(key, def) {
+		var value = GM_getValue(this.getKey(key), null);
+		if (null !== value && typeof(value) === 'string') { // Was set in localStorage and looks like it might be JSON.parse-able
+			try {
+				return JSON.parse(value);
+			} catch(err) {
+				// do nothing, drop through to pass back the default.
 			}
 		}
+		// Return the default
+		return (typeof(def) === 'undefined') ? null : def;
 	}
 
 	/**
-	 * @param integer thread_id - The ID of the thread
-	 * @return Boolean - true if the given thread_id is considered an image thread (primarily for the posting of images)
+	 * Sets the given string into Firefox's local storage.
+	 *
+	 * @param <string> key - the name of the key to store this under
+	 * @param Array|String|Integer|Boolean value - the value of the string to store. NOTE: This MUST be JSON'izeable, i.e. Objects that don't
+	 *                  have toString methods are not supported.
+	 * @return void
 	 */
-	, isImageThread: function(thread_id) {
-		var i = this.image_threads.length;
-		while(i--) {
-			if(Prefs.image_threads[i] === thread_id) {
-				return true;
-			}
-		}
-		return false;
+	, set: function(key, value) {
+		GM_setValue(this.getKey(key), JSON.stringify(value));
 	}
 
 	/**
-	 * Loads the preferences for this page type into a global variable.
+	 * Removes a locally stored string from Firefox's local storage
+	 *
+	 * @param <string> key - the name of the key to remove
+	 * @return void
 	 */
-	, loadPrefs: function() {
-		Users.initialize(LocalStorage.get('users', []));
-
-		this.is_hellbanning_enabled = LocalStorage.get('hellbanning_enabled', false);
-		this.lowcontentposts_filtering_enabled = LocalStorage.get('lowcontentposts_filtered', false);
-		this.avatars_enabled = LocalStorage.get('avatars_enabled', true);
-		this.streamline_enabled =  LocalStorage.get('streamline_enabled', false);
-		this.image_threads = LocalStorage.get('image_threads', []);
+	, remove: function(key, value) {
+		GM_setValue(this.getKey(key), null);
 	}
-
-	/**
-	 * Serializes and persists the global prefs
-	 */
-	, saveHellbanPrefs: function () {
-		LocalStorage.set('users', Users.users);
-		LocalStorage.set('hellbanning_enabled', this.is_hellbanning_enabled);
-	}
-	, saveLowContentPostsPrefs: function() {
-		LocalStorage.set('lowcontentposts_filtered', this.lowcontentposts_filtering_enabled);
-	}
-	, saveAvatarPrefs: function() {
-		LocalStorage.set('avatars_enabled', this.avatars_enabled);
-	}
-	, saveStreamlinePrefs: function() {
-		LocalStorage.set('streamline_enabled', this.streamline_enabled);
-	}
-	, saveImageThreadPrefs: function() {
-		LocalStorage.set('image_threads', this.image_threads);
-	}
-};
-
-/**
+};/**
  * Methods related to the current page, regardless of the page's function.
  * E.g. which forum we're in, determining the page handler, etc.
  */
@@ -992,8 +673,210 @@ Page = {
 		}
 	}
 };
-
 /**
+ * ----------------------------------
+ * Prefs
+ * ----------------------------------
+ * Handles preference information
+ */
+Prefs = {
+	// boolean - Is hellbanning currently enabled?
+	is_hellbanning_enabled: false
+
+	// array - list of thread_ids that are considered image threads
+	, image_threads: []
+
+	// Boolean - are lowcontent posts filtered?
+	, lowcontentposts_filtering_enabled: false
+
+	// Boolean - are avatars enabled?
+	, avatars_enabled: true
+
+	// Boolean - Is the ThreadView streamlined?
+	, streamline_enabled: false
+
+	/**
+	 * Adds a thread to the list of those considered "Image threads" (primarily about images)
+	 * @param integer thread_id
+	 */
+	, addImageThread: function(thread_id) {
+		this.image_threads.push(thread_id);
+	}
+
+	/**
+	 * Removes a thread from the list of those considered "Image threads"
+	 * @param integer thread_id
+	 */
+	, removeImageThread: function(thread_id) {
+		var i = this.image_threads.length;
+		while(i--) {
+			if(this.image_threads[i] === thread_id) {
+				this.image_threads.splice(i, 1);
+				break;
+			}
+		}
+	}
+
+	/**
+	 * @param integer thread_id - The ID of the thread
+	 * @return Boolean - true if the given thread_id is considered an image thread (primarily for the posting of images)
+	 */
+	, isImageThread: function(thread_id) {
+		var i = this.image_threads.length;
+		while(i--) {
+			if(Prefs.image_threads[i] === thread_id) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Loads the preferences for this page type into a global variable.
+	 */
+	, loadPrefs: function() {
+		Users.initialize(LocalStorage.get('users', []));
+
+		this.is_hellbanning_enabled = LocalStorage.get('hellbanning_enabled', false);
+		this.lowcontentposts_filtering_enabled = LocalStorage.get('lowcontentposts_filtered', false);
+		this.avatars_enabled = LocalStorage.get('avatars_enabled', true);
+		this.streamline_enabled =  LocalStorage.get('streamline_enabled', false);
+		this.image_threads = LocalStorage.get('image_threads', []);
+	}
+
+	/**
+	 * Serializes and persists the global prefs
+	 */
+	, saveHellbanPrefs: function () {
+		LocalStorage.set('users', Users.users);
+		LocalStorage.set('hellbanning_enabled', this.is_hellbanning_enabled);
+	}
+	, saveLowContentPostsPrefs: function() {
+		LocalStorage.set('lowcontentposts_filtered', this.lowcontentposts_filtering_enabled);
+	}
+	, saveAvatarPrefs: function() {
+		LocalStorage.set('avatars_enabled', this.avatars_enabled);
+	}
+	, saveStreamlinePrefs: function() {
+		LocalStorage.set('streamline_enabled', this.streamline_enabled);
+	}
+	, saveImageThreadPrefs: function() {
+		LocalStorage.set('image_threads', this.image_threads);
+	}
+};
+Smilies = {
+	search: function(request, response) {
+		var terms = [];
+		$(request.term.split(' ')).each(function (x, term) {
+			if(term.length) {
+				terms.unshift({
+					term: term.toLowerCase()
+					, regex: new RegExp('^' + $.ui.autocomplete.escapeRegex(term), 'i')
+				});
+			}
+		});
+		var results = this.findSmilies(terms);
+		results.sort(function(a, b) {
+			return (b.relevancy - a.relevancy);
+		});
+
+		var resp = [];
+		for(var i = 0; i < Math.min(results.length, 12); i++) {
+			var item = results[i];
+			resp.push({
+				label: '<img src="' + item.smiley.url + '">'
+				, value: (item.smiley.macro || (':'+item.name+':'))
+				});
+		};
+		if(resp.length === 0) {
+			resp.push({
+				label: '<i>No results found</i>'
+				, value: null
+				});
+		}
+		response(resp);
+	}
+	, findSmilies: function(terms) {
+		var resp = [];
+		if(!terms.length) {
+			return resp;
+		}
+
+		$.each(SmilyData, function (name, data) {
+			var relevancy = 0;
+			for(var i = 0; i < terms.length; i++) {
+				var term = terms[i];
+				for(var j = 0; j < data.keys.length; j++) {
+					if(term.term === data.keys[j]) {
+						relevancy += 5; // An exact match is worth more than a partial match
+					} else if(term.regex.test(data.keys[j])) {
+						relevancy++;
+					}
+				}
+			}
+			if(relevancy) {
+				resp.push({
+					relevancy: relevancy
+					, name: name
+					, smiley: data
+				});
+			}
+		});
+		return resp;
+	}
+  
+	, init: function() {
+		$('a[class="show_bbcode"]')
+			.after($('<input style="margin-left: 1em" type="text" name="smiley_ac" id="smiley_ac" value="" placeholder="Enter smiley search terms" size="25">'))
+		this.$textarea = $('textarea[name="message"]');
+		this.$textarea.blur($.proxy(this.textareaBlur, this));
+
+		this.$searchbox = $("#smiley_ac");
+		this.$searchbox
+			.on('focus', $.proxy(Smilies.searchFocus, this))
+			.autocomplete({
+				source: $.proxy(Smilies.search, this)
+				, html: true
+				, select: $.proxy(Smilies.select,this)
+				, close: $.proxy(Smilies.close,this)
+			});
+	}
+	, $textarea: null
+	, $searchbox: null
+	, selectionStart: null
+	, selectionEnd: null
+	// Called when the text area receives the blur event
+	, textareaBlur: function(event) {
+		var ele = this.$textarea[0];
+		this.selectionStart = ele.selectionStart;
+		this.selectionEnd = ele.selectionEnd;
+	}
+	// called when the user focuses on the Smiley search box
+	, searchFocus: function(event) {
+	  this.$searchbox.attr('value', '');
+	}
+	, select : function(event, item) {
+		if(item.item.value === null) {
+			return;	// No results found, so ignore this event.
+		}
+		if(this.selectionStart === null) {
+			this.selectionStart = this.selectionEnd = 0;
+		}
+		// insert the text
+		var t = this.$textarea.val();
+		var start = t.slice(0, this.selectionStart);
+		var end = t.slice(this.selectionEnd);
+		this.$textarea.val(start + item.item.value + end);
+		this.$textarea[0].selectionStart = this.$textarea[0].selectionEnd = start.length + item.item.value.length;
+	}
+	, close: function(event) {
+		this.$searchbox.attr('value', '');
+		if(this.selectionStart === null) {
+			return;
+		}
+		this.$textarea.trigger('focus');
+	}
+};/**
  * ----------------------------------
  * Users
  * ----------------------------------
@@ -1075,7 +958,234 @@ Users = {
 		return user;
 	}
 };
+/**
+ * Within the ThreadView page, contains information about a single post
+ */
+Post = function(table, postbody, post_id, author_name, author_id) {
+	var obj = {
+		table: table				// DOM "TABLE" object - Points to the Table object in the DOM that contains this post.
+		, postbody: postbody		// DOM "TD" object - Points to the TD object containing the actual post.
+		, post_id: post_id			// Unique ID for each post (assigned by SA server)
+		, author_name: author_name	// String - The name of the user who made this post
+		, author_id: author_id		// Integer - The user ID of the user who made this post
+		, visible: true				// Boolean - is this Post visible?
+		
+		/**
+		 * Shows or hides a Post, and marks it as such.
+		 * @param Boolean showHide - true to show, false to hide
+		 * @return Boolean - whether this changed the actual visiblity or not
+		 */
+		, showHide: function(showHide) {
+			if(showHide != this.visible) {
+				$(this.table).toggle(showHide);
+				this.visible = showHide;
+				return true;
+			}
+			return false;
+		}
+		/**
+		 * Returns true if the Post has an image attachment
+		 * @return Boolean
+		 */
+		, hasImageAttachment: function() {
+			return (Util.getNodes('./p[@class="attachment"]/img', this.postbody).length > 0);
+		}
 
+		/**
+		 * Returns true if the Post contains images (not counting emoticons, not within quoted sections)
+		 * or links.
+		 * @return Boolean
+		 */
+		, containsImagesOrLinks: function() {
+			var images = Util.getNodes('./img', this.postbody);
+			var i = images.length;
+			while(i--) {
+				if(!Util.isEmoticon(images[i])) {
+					return true;
+				}
+			}
+			if(this.hasImageAttachment()) {
+				return true;
+			}
+			var links = Util.getNodes('./a', this.postbody);
+			return (links.length > 0);
+		}
+
+		/**
+		 * Returns true if the Post is "low content", meaning that it doesn't contain any images or text (i.e. just quotes/emoticons)
+		 * @return Boolean
+		 */
+		, isLowContent: function() {
+			var cn = this.postbody.childNodes;
+			var i = cn.length;
+			while(i--) {
+				var node_type = Util.getNodeType(cn[i]);
+				switch(node_type) {
+				case 'image':
+				case 'link':
+				case 'text':
+					return false;
+				}
+			}
+			// Couldn't find any content.
+			return !this.hasImageAttachment();
+		}
+
+		, trimWhitespace: function() {
+			Util.trimWhitespace(this.postbody);
+
+			// Trim all sub quotes
+			var quotes = this.getQuotes();
+			var i = quotes.length;
+			while(i--) {
+				Util.trimWhitespace(quotes[i]);
+			}
+		}
+
+		, getQuotes: function() {
+			return Util.getNodes('.//div[contains(@class, "bbc-block")]/blockquote', this.postbody);
+		}
+
+		/**
+		 * Highlights/De-highlights a post
+		 */
+		, highlight: function(is_enable) {
+			var td = Util.getNodes('.//td', this.table);
+			$(td).attr('style', is_enable ? 'background-color:#EE0' : '');
+		}
+		
+		/**
+		 * @param boolean only_show_images - true if this Post is in an Image Thread
+		 * @param boolean enable_low_content_filtering - true if this Post is in the PYF Quotes thread
+		 * @return boolean - true if the post should be visible, false otherwise
+		 */ 
+		, isVisible: function(only_show_images, enable_low_content_filtering) {
+			// Don't hide posts in the PYF SA Quotes thread
+			if(enable_low_content_filtering && this.isLowContent()) {
+				return false;
+			}
+			// In "Image Threads", hide any posts that don't contain images.
+			if(only_show_images && !this.containsImagesOrLinks()) {
+				return false;
+			}
+
+			// Check for hellbanning here
+			if(Prefs.is_hellbanning_enabled) {
+				if(Users.isHellbanned(this.author_id)) {
+					return false;
+				}
+
+				// If a non-hellbanned user quoted a hellbanned post, then their post MAY be empty now. If so, hide that post.
+				if(/^\s*$/.test(this.postbody.textContent) && !this.containsImagesOrLinks()) {
+					return false;
+				}
+			}
+			return true;
+		}
+		
+		/**
+		 * If a post contains a quote from a Hellbanned user, then strip the quote and any text underneath it (until the end or the next quote).
+		 *
+		 * Note: Because this actually removes content permanently, this is somewhat incompatible with
+		 * the notion that you can toggle showing/hiding hellbanned content with a mouseclick. A better but
+		 * more complex solution would be to shuffle all this content into a DIV, which we can then just show/hide.
+		 *
+		 * @return boolean - true if any changes were made to the post
+		 */
+		, stripHellbannedQuotes: function() {
+			var posted_by_re = new RegExp('^(.+) posted:$');
+			var post_nodes = this.postbody.childNodes;
+			var under_banned_quote = false;
+			var element_ids_to_remove = [];
+			var i;
+			for(i = 0; i < post_nodes.length; i++) {
+				// Is this a quote?
+				var node_type = Util.getNodeType(post_nodes[i]);
+				if(node_type === 'edit') {
+					// There's no text after a "Edited by..." section so end here.
+					break;
+				} else if(node_type === 'quote') {
+					// Is this a quote made by a hellbanned User?
+					var res = post_nodes[i].firstElementChild.textContent.match(posted_by_re); // Determine quotee
+					under_banned_quote = res && Users.isHellbanned(res[1]);
+				}
+				if(under_banned_quote) {
+					element_ids_to_remove.push(i);
+				}
+			}
+			// Remove any quotes and the text underneath it.
+			if(element_ids_to_remove.length) {
+				while(element_ids_to_remove.length) {
+					Util.removeElement(post_nodes[element_ids_to_remove.pop()]);
+				}
+				return true;
+			}
+			return false;
+		}
+	};
+	return obj;
+};/**
+ * Class definition for a thread listed in the Thread List page or the User Control Panel.
+ */
+Thread = function(id, row, author_name, author_id, vote_img, num_votes, rating) {
+	var obj = {
+		id: id							// Integer - Unique ID that identifies this Thread
+		, row: row						// DOM "TR" object - Points to the table row in the DOM for this thread
+		, author_name: author_name		// String - User name who made this thread
+		, author_id: author_id			// Integer - User ID of the user who made this thread
+		, visible: true					// Boolean - is this Thread currently visible?
+		, vote_img: vote_img			// null | DOM "IMG" object that contains the 1-5 voting image.
+		, num_votes: num_votes			// Integer - number of people that have voted on this thread
+		, rating: rating				// Integer - average vote value (between 1 and 5)
+
+		/**
+		* Shows or hides a Thread, and marks it as such.
+		* @param Boolean showHide - true to show, false to hide
+		* @return Boolean - whether this changed the actual visiblity or not
+		*/
+		, showHide: function(showHide) {
+			if(showHide != this.visible) {
+				$(this.row).toggle(showHide);
+				this.visible = showHide;
+				return true;
+			}
+			return false;
+		}
+	};
+	return obj;
+};
+/**
+ * Class definition for a SA User
+ */
+function User(id, name) {
+	this.id = id;					// Integer - User ID
+	this.name = name;				// String - this user's name
+	this.isHellbanned = false;		// Boolean - true if the user is Hellbanned.
+}
+/**
+* ----------------------------------
+* NewThread
+* ----------------------------------
+* For the Reply To Thread page
+*/
+NewThread = {
+	handle: function() {
+		Smilies.init();
+		Page.fixupCss();
+	}
+};
+/**
+ * ----------------------------------
+ * PrivateMessageEntry
+ * ----------------------------------
+ * For the New/Reply To Private Message page
+ */
+PrivateMessageEntry = {
+	handle: function() {
+		Smilies.init();
+		Page.fixupCss();
+	}
+};
 /**
  * ----------------------------------
  * ThreadList
@@ -1203,7 +1313,18 @@ ThreadList= {
 		this.refresh();
 	}
 };
-
+/**
+ * ----------------------------------
+ * ThreadReply
+ * ----------------------------------
+ * For the Reply To Thread page
+ */
+ThreadReply = {
+	handle: function() {
+		Smilies.init();
+		Page.fixupCss();
+	}
+};
 /**
  * ----------------------------------
  * ThreadView
@@ -1691,7 +1812,6 @@ ThreadView = {
 		}
 	}
 };
-
 /**
  * ----------------------------------
  * UserControlPanel
@@ -1750,166 +1870,6 @@ UserControlPanel = {
 		Page.addConfigUi([], false);
 	}
 };
-
-/**
-* ----------------------------------
-* NewThread
-* ----------------------------------
-* For the Reply To Thread page
-*/
-NewThread = {
-	handle: function() {
-		Smilies.init();
-		Page.fixupCss();
-	}
-};
-
-/**
- * ----------------------------------
- * ThreadReply
- * ----------------------------------
- * For the Reply To Thread page
- */
-ThreadReply = {
-	handle: function() {
-		Smilies.init();
-		Page.fixupCss();
-	}
-};
-
-/**
- * ----------------------------------
- * PrivateMessageEntry
- * ----------------------------------
- * For the New/Reply To Private Message page
- */
-PrivateMessageEntry = {
-	handle: function() {
-		Smilies.init();
-		Page.fixupCss();
-	}
-};
-
-
-Smilies = {
-	search: function(request, response) {
-		var terms = [];
-		$(request.term.split(' ')).each(function (x, term) {
-			if(term.length) {
-				terms.unshift({
-					term: term.toLowerCase()
-					, regex: new RegExp('^' + $.ui.autocomplete.escapeRegex(term), 'i')
-				});
-			}
-		});
-		var results = this.findSmilies(terms);
-		results.sort(function(a, b) {
-			return (b.relevancy - a.relevancy);
-		});
-
-		var resp = [];
-		for(var i = 0; i < Math.min(results.length, 12); i++) {
-			var item = results[i];
-			resp.push({
-				label: '<img src="' + item.smiley.url + '">'
-				, value: (item.smiley.macro || (':'+item.name+':'))
-				});
-		};
-		if(resp.length === 0) {
-			resp.push({
-				label: '<i>No results found</i>'
-				, value: null
-				});
-		}
-		response(resp);
-	}
-	, findSmilies: function(terms) {
-		var resp = [];
-		if(!terms.length) {
-			return resp;
-		}
-
-		$.each(SmilyData, function (name, data) {
-			var relevancy = 0;
-			for(var i = 0; i < terms.length; i++) {
-				var term = terms[i];
-				for(var j = 0; j < data.keys.length; j++) {
-					if(term.term === data.keys[j]) {
-						relevancy += 5; // An exact match is worth more than a partial match
-					} else if(term.regex.test(data.keys[j])) {
-						relevancy++;
-					}
-				}
-			}
-			if(relevancy) {
-				resp.push({
-					relevancy: relevancy
-					, name: name
-					, smiley: data
-				});
-			}
-		});
-		return resp;
-	}
-  
-	, init: function() {
-		$('a[class="show_bbcode"]')
-			.after($('<input style="margin-left: 1em" type="text" name="smiley_ac" id="smiley_ac" value="" placeholder="Enter smiley search terms" size="25">'))
-		this.$textarea = $('textarea[name="message"]');
-		this.$textarea.blur($.proxy(this.textareaBlur, this));
-
-		this.$searchbox = $("#smiley_ac");
-		this.$searchbox
-			.on('focus', $.proxy(Smilies.searchFocus, this))
-			.autocomplete({
-				source: $.proxy(Smilies.search, this)
-				, html: true
-				, select: $.proxy(Smilies.select,this)
-				, close: $.proxy(Smilies.close,this)
-			});
-	}
-	, $textarea: null
-	, $searchbox: null
-	, selectionStart: null
-	, selectionEnd: null
-	// Called when the text area receives the blur event
-	, textareaBlur: function(event) {
-		var ele = this.$textarea[0];
-		this.selectionStart = ele.selectionStart;
-		this.selectionEnd = ele.selectionEnd;
-	}
-	// called when the user focuses on the Smiley search box
-	, searchFocus: function(event) {
-	  this.$searchbox.attr('value', '');
-	}
-	, select : function(event, item) {
-		if(item.item.value === null) {
-			return;	// No results found, so ignore this event.
-		}
-		if(this.selectionStart === null) {
-			this.selectionStart = this.selectionEnd = 0;
-		}
-		// insert the text
-		var t = this.$textarea.val();
-		var start = t.slice(0, this.selectionStart);
-		var end = t.slice(this.selectionEnd);
-		this.$textarea.val(start + item.item.value + end);
-		this.$textarea[0].selectionStart = this.$textarea[0].selectionEnd = start.length + item.item.value.length;
-	}
-	, close: function(event) {
-		this.$searchbox.attr('value', '');
-		if(this.selectionStart === null) {
-			return;
-		}
-		this.$textarea.trigger('focus');
-	}
-};
-
-
-// Execution begins here
-
-try {
-
 /*
 * jQuery UI Autocomplete HTML Extension
 *
@@ -1918,6 +1878,8 @@ try {
 *
 * http://github.com/scottgonzalez/jquery-ui-extensions
 */
+
+function installAutoCompleter($) {
 
 (function($) {
 var proto = $.ui.autocomplete.prototype,
@@ -1947,15 +1909,15 @@ var proto = $.ui.autocomplete.prototype,
         .appendTo( ul );
       }
     });
-    })( $ );
-// -- End autocomplete extension
+})( $ );
 
+}// Execution begins here
+try {
+  installAutoCompleter($); // See util/autocompleter.js
   Page.init();
 } catch (e) {
   console.log(e);
 }
-
-
 SmilyData = {
 'frown': {
   keys: ['frown', ':(', 'sad', 'face', 'unhappy']

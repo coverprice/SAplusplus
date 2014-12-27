@@ -1,8 +1,12 @@
 #!/bin/bash
-
 cat \
  GreaseMonkeyHeader.txt \
  CHANGELOG.txt \
- code.js \
- SmileyData.js \
+ util/*.js \
+ app/*.js \
+ app/nouns/*.js \
+ app/pagehandler/*.js \
+ vendor/*.js \
+ main.js \
+ data/*.js \
  > SAplusplus.user.js
