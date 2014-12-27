@@ -1,0 +1,194 @@
+/**
+ * =========================
+ * SAplusplus by minato
+ * =========================
+ * If you want to contact me, send me a PM on the forums.
+ *
+ * =========================
+ * Changelog
+ * =========================
+ *
+ * V 1.0.21: 2014-11-25
+ * - Added CSS to improve contrast within [code] tags.
+ * - Remove "Nice!" button in Yospos
+ *
+ * V 1.0.20: 2014-11-04
+ * - Changed download URL to something more stable than userscripts.org
+ *
+ * V 1.0.19: 2014-10-29
+ * - Removed spurious debugging info
+ * - Fixed bug where some image titles were not being reg-exp'd correctly
+ *
+ * V 1.0.18: 2014-06-12
+ * - More robust way of detecting whether this is the PYF Quotes thread (i.e. by searching the thread title)
+ *
+ * V 1.0.17: 2014-04-29
+ * - Restored use of GM_set/getValue because Firefox 29 was complaining about localStorage being insecure
+ *
+ * V 1.0.16: 2014-04-05
+ * - Fixed unsafeWindow bug that stopped the script from working, by including jQuery/jQuery-UI directly.
+ * - Changed 'like' icon to a non-animated one.
+ *
+ * V 1.0.15: 2013-02-01
+ * - Show the number of times a post has been quoted within the page underneath the post.
+ * - Slightly less hideous color for the highlighted post
+ * - Fixed bug where "Streamline page" mode could not be disabled
+ *
+ * V 1.0.14: 2013-01-31
+ * - Partially converted to use the forum's jQuery, and other modernizations
+ * - Added Smiley finder
+ * - Removed code to move "Watch Thread", as the forums now do this themselves
+ * - Highlight posts referred to in the anchor, fixed bug when scrolling.
+ *
+ * V 1.0.13: 2013-01-03
+ * - General code cleanup
+ * - Preferences are collapsed until the Edit button is pressed.
+ *
+ * V 1.0.12: 2013-01-03
+ * - "Open unread in tabs" now works on the Bookmarked threads page
+ *
+ * V 1.0.11: 2013-01-02
+ * - Removed ugly dropshadow on "Open in tabs" button (due to new forums redesign)
+ * - Larger click target for "Next page"/"Previous page" buttons
+ *
+ * V 1.0.10: 2012-12-07
+ * - Fixed bug where spammed images weren't being removed and trimmed whitespace wasn't working.
+ *
+ * V 1.0.9: 2012-06-21
+ * - No longer use GM_* api except for GM_openInTab. Storage now uses Firefox's localStorage.
+ * - Use JSON API to store/retrieve preferences instead of eval()
+ * - Added @grant for GreaseMonkey 1.0+ compatibility
+ *
+ * V 1.0.8: 2012-02-13
+ * - Updated code to handle some cases where low-content posts were not being correctly detected.
+ *
+ * V 1.0.7: 2011-10-29
+ * - Added thread ID exception to the "hide posts with only quotes" thread because it hides
+ *   many posts in the "PYF Favorite SA Quotes" thread.
+ *
+ * V 1.0.6: 2011-05-29
+ * - Fixed bug where an SA Support Robot stickied psuedo-thread messed up the parsing.
+ *
+ * V 1.0.5: 2011-04-23
+ * - Fixed bug where posts with attachment images were considered to have no images.
+ * - When filtering "Image only" threads, also allow posts that contain links since they tend to be Youtube links.
+ *
+ * V 1.0.4: 2011-02-22
+ * - Fixed problems when viewing threads in the goldmine
+ *
+ * V 1.0.3: 2011-01-26
+ * - Better checking for Emoticons
+ * - Fixed processing people with forums cancer
+ * - Fixed bug where stripped page mode wouldn't work when moving to another page
+ *
+ * V 1.0.2: 2011-01-08
+ * - After removing images, trims whitespace from posts.
+ * - Reanchors page after load if any posts were removed.
+ * - Fixed bug where stripped hellbanned users would cause an image-only post to be hidden.
+ * - Fixed restriping bug when hiding low content posts.
+ * 
+ * V 1.0.1: 2011-01-05
+ * - Fixed bug removing quoted hellbanned users
+ *
+ * V 1.0: 2011-01-04
+ * - First release
+ *
+ * =========================
+ * DESCRIPTION
+ * =========================
+ * Implements various enhancements to Something Awful forums browsing. Enhancements include:
+ *
+ * User Control Panel:
+ * - Button that will open all unread threads in new tabs.
+ *
+ * Thread List:
+ * - Move ratings next to thread title, to more easily scan for gold threads.
+ * - Hide threads by hellbanned users
+ * - Only show ratings for threads if a minimum number of people have voted (useful for FYAD where the threshold is very low)
+ *
+ * Thread View:
+ * - Hellban users. A hellbanned user is effectively erased from your browsing experience. Their posts will be removed,
+ *   including responses to their posts by non-hellbanned users.
+ * - Hide posts that don't contain images. Useful for image threads where too many people just comment without posting content.
+ * - Prevent image spamming. Any more than 3 images in a quote are removed, to prevent the case where people quote a large
+ *   post full of images and just add a one line comment.
+ * - Filter low content posts. Hides post that are just empty quotes or single-emoticon posts.
+ * - Streamline view. For quickly skimming a long thread. Strips the page of any extraneous content, showing more posts per-page.
+ * - Hide avatars. Client-side preference for scrubbing avatars/custom-titles, so you can (for example) show avatars at home but not at work.
+ *
+ * =========================
+ * USING THIS SCRIPT
+ * =========================
+ * After installation, each page will have a small bar near the bottom "SA++ preferences". Click the "Edit" button to alter
+ * preferences. Some preferences are site-wide (e.g. "Hide Avatars"), some are thread-specific (e.g. "Hide posts with no text or images").
+ *
+ * -------------------------
+ * Hellbanning
+ * -------------------------
+ * Hellbanning a user will erase them from your browsing experience. All their posts, threads, and even their quotes in other posts, will
+ * be removed.
+ * - To hellban a user, click "Hellban" under one of their posts.
+ * - To unhellban a user, click "Edit" in the preferences bar at the bottom of the page, click "View Hellbanned users"
+ *		and then click "Unhellban" next to the name of the user.
+ *
+ * =========================
+ * USAGE NOTES
+ * =========================
+ * Known issues:
+ * - The preference state is stored in RAM on each page, so if you (say) hellban a user in one tab, then
+ *   move to another tab and hellban another, the prefs will be completely overwritten and you'll lose the first pref.
+ *   This can be fixed by reloading the prefs before tweaking and saving them but I haven't gotten around to it.
+ *
+ * IMPORTANT: This code depends on the following environment:
+ * - SA Last Read FF extension (SALR) is installed. 
+ * - Adblock is installed
+ * - SA user configuration is set up in a particular way.
+ *
+ * For me, this script works when each of the above has the following settings. Failure to follow this configuration MAY
+ * mean that the script doesn't work at all, but as far as I know there isn't any conflict with ANY settings. I
+ * haven't tested user sigs though.
+ * 
+ * SALR config:
+ * - General options:
+ *   Hide forum header/footer [UNCHECKED]
+ * - Forums:
+ *   All features [UNCHECKED]
+ * 
+ * Adblock config:
+ *  |http://forums.somethingawful.com/css/rfa.css
+ *  |http://forums.somethingawful.com/css/fyad.css
+ * These shouldn't affect the script, but failing to block these may have unexpected results when streamlining.
+ *
+ * SA user options: http://forums.somethingawful.com/member.php?action=editoptions
+ * - Mark posts on pages I've already seen in a different color: YES
+ * - Show user's signatures in their posts? : NO
+ * - Show member ad banners? : NO - I have "No Ads", so I don't know if this script works when Ads are enabled.
+ *
+ * =========================
+ * DEVELOPMENT NOTES
+ * =========================
+ * Class overview:
+ * - Page: The page controller. This determines the page type from the URL, bootstraps each page type's
+ *   handler and passes control over to it in the handle() method. It also contains some page-related utility functions.
+ *
+ * Page handlers:
+ * - ThreadList:			The page that displays a list of threads to view
+ * - ThreadView				A page of posts
+ * - UserControlPanel		The User Control Panel or Bookmarked Threads page
+ * - NewThread				Form for posting a new thread
+ * - ThreadReply			Form for replying to an existing thread
+ * - PrivateMessageEntry	Form for posting a new private message, or replying to one
+ *
+ * Each handler has a method "handle()" which is run once when the page loads. This is where it will do its per-page
+ * manipulations.
+ *
+ * Other classes:
+ * - User:					A SA User
+ * - Users:					The list of Users from the preferences
+ * - Thread:				A single Thread in the ThreadList
+ * - Post:					A single Post in the ThreadView
+ * - Smilies:				Emoticon search functionality
+ * - LocalStorage:			Utility class that encapsulates persisting data to Firefox's local store
+ * - Util:					Utility class, mostly DOM manipulation.
+ * - Prefs:					Utility class for persisting user preferences.
+ */
