@@ -8,6 +8,9 @@
  * Changelog
  * =========================
  *
+ * V 1.0.22: 2016-02-25
+ * - Fixed issues caused by modified post DOM layout
+ *
  * V 1.0.21: 2014-11-25
  * - Added CSS to improve contrast within [code] tags.
  * - Remove "Nice!" button in Yospos

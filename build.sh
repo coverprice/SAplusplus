@@ -9,4 +9,4 @@ cat \
  vendor/*.js \
  main.js \
  data/*.js \
- > SAplusplus.user.js
+ > /Users/jrussell/Library/Application\ Support/Firefox/Profiles/tgh6ouel.default/gm_scripts/SAplusplus/SAplusplus.user.js

@@ -5,8 +5,8 @@
 * For the Reply To Thread page
 */
 NewThread = {
-	handle: function() {
-		Smilies.init();
-		Page.fixupCss();
-	}
+  handle: function() {
+    Smilies.init();
+    Page.fixupCss();
+  }
 };

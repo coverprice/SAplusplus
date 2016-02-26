@@ -4,7 +4,7 @@
 // @description		Improves the Something Awful forums in various ways.
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.21
+// @version			1.0.22
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
