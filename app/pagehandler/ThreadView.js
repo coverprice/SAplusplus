@@ -87,7 +87,12 @@ ThreadView = {
       name_node = uinfo.firstElementChild.firstElementChild.nextElementSibling;
     } else {
       author_id = parseInt(td.className.match(user_id_re)[1]);
-      postbody = td.nextElementSibling.firstElementChild;
+      postbody = td.nextElementSibling;
+      if(postbody.firstElementChild
+        && postbody.firstElementChild.tagName === "DIV"
+        && postbody.firstElementChild.className === "cancerous") {
+        postbody = postbody.firstElementChild;
+      }
       name_node = td.firstElementChild.firstElementChild;
     }
     
