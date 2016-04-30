@@ -3,8 +3,9 @@
 // @namespace		SA
 // @description		Improves the Something Awful forums in various ways.
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
+// @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.22
+// @version			1.0.23
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -22,6 +23,11 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.23: 2016-04-28
+ * - Fixed bug removing image threads preferences
+ * - Fixed bug viewing hellbanned users
+ * - Added support for https in the Greasemonkey header
  *
  * V 1.0.22: 2016-02-25
  * - Fixed issues caused by modified post DOM layout
@@ -631,7 +637,7 @@ Page = {
     div.style.paddingTop = "1em";
 
     let out = '', cnt = 0, i = Users.users.length;
-    for(let u of User.users) {
+    for(let u of Users.users) {
       if(u.isHellbanned) {
         out += '<tr id="unhellbanrow' + u.id + '">' +
           '<td><a href="http://forums.somethingawful.com/member.php?action=getinfo&userid=' + u.id + '">' + u.name + '</a></td>' +
@@ -709,11 +715,9 @@ Prefs = {
    * @param integer thread_id
    */
   , removeImageThread: function(thread_id) {
-    for(let image_thread of this.image_threads) {
-      if(image_thread === thread_id) {
-        this.image_threads.splice(i, 1);
-        break;
-      }
+    let idx = this.image_threads.indexOf(thread_id);
+    if(idx >= 0) {
+      this.image_threads.splice(idx, 1);
     }
   }
 
@@ -722,12 +726,7 @@ Prefs = {
    * @return Boolean - true if the given thread_id is considered an image thread (primarily for the posting of images)
    */
   , isImageThread: function(thread_id) {
-    for(let image_thread of Prefs.image_threads) {
-      if(image_thread === thread_id) {
-        return true;
-      }
-    }
-    return false;
+    return (this.image_threads.indexOf(thread_id) >= 0);
   }
 
   /**

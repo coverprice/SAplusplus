@@ -8,6 +8,11 @@
  * Changelog
  * =========================
  *
+ * V 1.0.23: 2016-04-28
+ * - Fixed bug removing image threads preferences
+ * - Fixed bug viewing hellbanned users
+ * - Added support for https in the Greasemonkey header
+ *
  * V 1.0.22: 2016-02-25
  * - Fixed issues caused by modified post DOM layout
  *

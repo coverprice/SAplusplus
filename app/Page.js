@@ -169,7 +169,7 @@ Page = {
     div.style.paddingTop = "1em";
 
     let out = '', cnt = 0, i = Users.users.length;
-    for(let u of User.users) {
+    for(let u of Users.users) {
       if(u.isHellbanned) {
         out += '<tr id="unhellbanrow' + u.id + '">' +
           '<td><a href="http://forums.somethingawful.com/member.php?action=getinfo&userid=' + u.id + '">' + u.name + '</a></td>' +

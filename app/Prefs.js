@@ -33,11 +33,9 @@ Prefs = {
    * @param integer thread_id
    */
   , removeImageThread: function(thread_id) {
-    for(let image_thread of this.image_threads) {
-      if(image_thread === thread_id) {
-        this.image_threads.splice(i, 1);
-        break;
-      }
+    let idx = this.image_threads.indexOf(thread_id);
+    if(idx >= 0) {
+      this.image_threads.splice(idx, 1);
     }
   }
 
@@ -46,12 +44,7 @@ Prefs = {
    * @return Boolean - true if the given thread_id is considered an image thread (primarily for the posting of images)
    */
   , isImageThread: function(thread_id) {
-    for(let image_thread of Prefs.image_threads) {
-      if(image_thread === thread_id) {
-        return true;
-      }
-    }
-    return false;
+    return (this.image_threads.indexOf(thread_id) >= 0);
   }
 
   /**
