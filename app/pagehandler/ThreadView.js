@@ -434,6 +434,7 @@ ThreadView = {
     Page.fixPrevNextButtons("pages top");
     Page.fixPrevNextButtons("pages bottom");
     Page.fixupCss();
+    Page.shrinkGiantImages();
     this.removeNiceButton();
     page_changed |= this.removeImagesFromQuotes(3);
 

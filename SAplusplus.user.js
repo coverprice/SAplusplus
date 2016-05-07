@@ -5,7 +5,7 @@
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.23
+// @version			1.0.24
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -23,6 +23,9 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.24: 2016-05-05
+ * - ThreadView now shrinks any images wider than the page.
  *
  * V 1.0.23: 2016-04-28
  * - Fixed bug removing image threads preferences
@@ -595,6 +598,25 @@ Page = {
   // Give the [code] tag more contrast
   , fixupCss: function() {
     GM_addStyle(".postbody code { color: black }");
+  }
+
+  /**
+  * Scale down images that are wider than the page so they fit on the page.
+  */
+  , shrinkGiantImages: function() {
+    let imgs = Util.getNodes('.//img');
+    let window_width = window.innerWidth;
+    for(let img of imgs) {
+      // If it goes off the right, and the left is visible, and it's not a zero-width image
+      // Note: naturalWidth is used here because for some darn reason, accessing width directly gave
+      // a value that was not the intrinsic width of the image (it was something smaller). No idea why.
+      if(img.x+img.naturalWidth > window_width && img.x < window_width && img.naturalWidth > 0) {
+        // Item is wider than the screen, so let's shrink it.
+        let scale = (window_width - img.x) / img.naturalWidth;
+        img.style.width = (window_width - img.x)+"px";
+        img.style.height = Math.floor(img.naturalHeight * scale)+"px";
+      }
+    }
   }
 
   /**
@@ -1746,6 +1768,7 @@ ThreadView = {
     Page.fixPrevNextButtons("pages top");
     Page.fixPrevNextButtons("pages bottom");
     Page.fixupCss();
+    Page.shrinkGiantImages();
     this.removeNiceButton();
     page_changed |= this.removeImagesFromQuotes(3);
 

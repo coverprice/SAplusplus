@@ -130,6 +130,25 @@ Page = {
   }
 
   /**
+  * Scale down images that are wider than the page so they fit on the page.
+  */
+  , shrinkGiantImages: function() {
+    let imgs = Util.getNodes('.//img');
+    let window_width = window.innerWidth;
+    for(let img of imgs) {
+      // If it goes off the right, and the left is visible, and it's not a zero-width image
+      // Note: naturalWidth is used here because for some darn reason, accessing width directly gave
+      // a value that was not the intrinsic width of the image (it was something smaller). No idea why.
+      if(img.x+img.naturalWidth > window_width && img.x < window_width && img.naturalWidth > 0) {
+        // Item is wider than the screen, so let's shrink it.
+        let scale = (window_width - img.x) / img.naturalWidth;
+        img.style.width = (window_width - img.x)+"px";
+        img.style.height = Math.floor(img.naturalHeight * scale)+"px";
+      }
+    }
+  }
+
+  /**
   * Change the "<" / ">" buttons to "Prev" / "Next" to give a bigger click target
   */
   , fixPrevNextButtons: function(class_name) {

@@ -8,6 +8,9 @@
  * Changelog
  * =========================
  *
+ * V 1.0.24: 2016-05-05
+ * - ThreadView now shrinks any images wider than the page.
+ *
  * V 1.0.23: 2016-04-28
  * - Fixed bug removing image threads preferences
  * - Fixed bug viewing hellbanned users
