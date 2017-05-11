@@ -46,8 +46,15 @@ Post = function(table, postbody, post_id, author_name, author_id) {
       if(this.hasImageAttachment()) {
         return true;
       }
+      var videos = Util.getNodes('./video', this.postbody);
+      if (videos.length > 0) {
+        return true;
+      }
       var links = Util.getNodes('./a', this.postbody);
-      return (links.length > 0);
+      if (links.length > 0) {
+        return true;
+      }
+      return false;
     }
 
     /**

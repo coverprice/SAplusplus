@@ -5,7 +5,7 @@
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.24
+// @version			1.0.25
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -23,6 +23,9 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.25: 2017-05-11
+ * - Video tags (for GIFV files) are considered content.
  *
  * V 1.0.24: 2016-05-05
  * - ThreadView now shrinks any images wider than the page.
@@ -1023,8 +1026,15 @@ Post = function(table, postbody, post_id, author_name, author_id) {
       if(this.hasImageAttachment()) {
         return true;
       }
+      var videos = Util.getNodes('./video', this.postbody);
+      if (videos.length > 0) {
+        return true;
+      }
       var links = Util.getNodes('./a', this.postbody);
-      return (links.length > 0);
+      if (links.length > 0) {
+        return true;
+      }
+      return false;
     }
 
     /**
