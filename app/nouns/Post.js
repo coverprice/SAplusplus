@@ -46,7 +46,7 @@ Post = function(table, postbody, post_id, author_name, author_id) {
       if(this.hasImageAttachment()) {
         return true;
       }
-      var videos = Util.getNodes('./video', this.postbody);
+      var videos = Util.getNodes('./div/video', this.postbody);
       if (videos.length > 0) {
         return true;
       }
