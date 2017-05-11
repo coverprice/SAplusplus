@@ -67,6 +67,7 @@ Util = {
    * - 'whitespace' (whitespace TextNode, comment node)
    * - 'text' (text content, etc)
    * - 'quote' (means a DIV containing a blockquote)
+   * - 'video' (DIV containing a video tag)
    * - 'edit' (The <P> "edited by..." at the end of a post)
    * - 'link' (<A>)
    * - 'image' (<IMG> (not an emoticon))
@@ -90,11 +91,15 @@ Util = {
         return 'edit';  // This is the "Edited by" paragraph.
 
       case 'DIV':
-        // Probably a block quote
+        // Check for block quote
         if(node.firstElementChild
             && node.firstElementChild.nextElementSibling
             && node.firstElementChild.nextElementSibling.tagName === 'BLOCKQUOTE') {
           return 'quote';
+        }
+        if(node.firstElementChild
+            && node.firstElementChild.tagName === 'VIDEO'
+          return 'video';
         }
         return 'text2';
 

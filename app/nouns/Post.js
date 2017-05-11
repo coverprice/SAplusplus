@@ -66,6 +66,7 @@ Post = function(table, postbody, post_id, author_name, author_id) {
         var node_type = Util.getNodeType(child_node);
         switch(node_type) {
         case 'image':
+        case 'video':
         case 'link':
         case 'text':
           return false;
