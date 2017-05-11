@@ -98,7 +98,7 @@ Util = {
           return 'quote';
         }
         if(node.firstElementChild
-            && node.firstElementChild.tagName === 'VIDEO'
+            && node.firstElementChild.tagName === 'VIDEO') {
           return 'video';
         }
         return 'text2';
