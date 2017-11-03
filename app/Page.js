@@ -126,7 +126,16 @@ Page = {
 
   // Give the [code] tag more contrast
   , fixupCss: function() {
-    GM_addStyle(".postbody code { color: black }");
+    let css = `
+      #SApp_prefs_table input[type=checkbox] {
+         transform: scale(1);
+         display: inline;
+      }
+      .postbody code {
+         color: black;
+      }
+      `;
+    GM_addStyle(css);
   }
 
   /**

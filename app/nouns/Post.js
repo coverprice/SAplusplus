@@ -2,7 +2,7 @@
  * Within the ThreadView page, contains information about a single post
  */
 Post = function(table, postbody, post_id, author_name, author_id) {
-  var obj = {
+  let obj = {
     table: table        // DOM "TABLE" object - Reference to the Table that contains this post.
     , postbody: postbody    // DOM "DIV" object - Reference to the DIV containing the post contents.
     , post_id: post_id      // Unique ID for each post (assigned by SA server)
@@ -32,48 +32,42 @@ Post = function(table, postbody, post_id, author_name, author_id) {
     }
 
     /**
-     * Returns true if the Post contains images (not counting emoticons, not within quoted sections)
-     * or links.
+     * Returns true if the Post contains "text content", meaning that it contains visible text
+     * (NOT including quotes, emoticons, or whitespace).
+     * etc, (and optionally, textual content). Items like whitespace, quotes, and emoticons DON'T count as content.
+     *
      * @return Boolean
      */
-    , containsImagesOrLinks: function() {
-      var images = Util.getNodes('./img', this.postbody);
-      for(let image of images) {
-        if(!Util.isEmoticon(image)) {
+    , containsTextContent: function() {
+      for(let child_node of this.postbody.childNodes) {
+        if (Util.getNodeType(child_node) == 'text') {
           return true;
         }
-      }
-      if(this.hasImageAttachment()) {
-        return true;
-      }
-      var videos = Util.getNodes('./div/video', this.postbody);
-      if (videos.length > 0) {
-        return true;
-      }
-      var links = Util.getNodes('./a', this.postbody);
-      if (links.length > 0) {
-        return true;
       }
       return false;
     }
 
     /**
-     * Returns true if the Post is "low content", meaning that it doesn't contain any images or text (i.e. just quotes/emoticons)
+     * Returns true if the Post contains "significant content", meaning that it contains images, videos, links, tweets,
+     * etc (but does not include text). Whitespace, emoticons, and quotes are NOT considered to be significant content.
+     *
      * @return Boolean
      */
-    , isLowContent: function() {
+    , containsSignificantContent: function() {
+      if(this.hasImageAttachment()) {
+        return true;
+      }
       for(let child_node of this.postbody.childNodes) {
-        var node_type = Util.getNodeType(child_node);
+        let node_type = Util.getNodeType(child_node);
         switch(node_type) {
         case 'image':
         case 'video':
         case 'link':
-        case 'text':
-          return false;
+        case 'tweet':
+          return true;
         }
       }
-      // Couldn't find any content.
-      return !this.hasImageAttachment();
+      return false;
     }
 
     , trimWhitespace: function() {
@@ -93,7 +87,7 @@ Post = function(table, postbody, post_id, author_name, author_id) {
      * Highlights/De-highlights a post
      */
     , highlight: function(is_enable) {
-      var td = Util.getNodes('.//td', this.table);
+      let td = Util.getNodes('.//td', this.table);
       $(td).attr('style', is_enable ? 'background-color:#EE0' : '');
     }
     
@@ -103,12 +97,13 @@ Post = function(table, postbody, post_id, author_name, author_id) {
      * @return boolean - true if the post should be visible, false otherwise
      */ 
     , isVisible: function(only_show_images, enable_low_content_filtering) {
-      // Don't hide posts in the PYF SA Quotes thread
-      if(enable_low_content_filtering && this.isLowContent()) {
+      let has_text_content = this.containsTextContent();
+      let has_significant_content = this.containsSignificantContent();
+      if(enable_low_content_filtering && !(has_text_content || has_significant_content)) {
         return false;
       }
-      // In "Image Threads", hide any posts that don't contain images.
-      if(only_show_images && !this.containsImagesOrLinks()) {
+      // In "Image Threads", hide any posts that don't contain images/videos/etc.
+      if(only_show_images && !has_significant_content) {
         return false;
       }
 
@@ -118,8 +113,9 @@ Post = function(table, postbody, post_id, author_name, author_id) {
           return false;
         }
 
-        // If a non-hellbanned user quoted a hellbanned post, then their post MAY be empty now. If so, hide that post.
-        if(/^\s*$/.test(this.postbody.textContent) && !this.containsImagesOrLinks()) {
+        // If a non-hellbanned user quoted a hellbanned post, then it will have been stripped from
+        // their post, so the post MAY be empty now. If so, hide that post.
+        if(/^\s*$/.test(this.postbody.textContent) && !has_significant_content) {
           return false;
         }
       }
@@ -136,20 +132,20 @@ Post = function(table, postbody, post_id, author_name, author_id) {
      * @return boolean - true if any changes were made to the post
      */
     , stripHellbannedQuotes: function() {
-      var posted_by_re = new RegExp('^(.+) posted:$');
-      var post_nodes = this.postbody.childNodes;
-      var under_banned_quote = false;
-      var element_ids_to_remove = [];
-      var i;
+      let posted_by_re = new RegExp('^(.+) posted:$');
+      let post_nodes = this.postbody.childNodes;
+      let under_banned_quote = false;
+      let element_ids_to_remove = [];
+      let i;
       for(i = 0; i < post_nodes.length; i++) {
         // Is this a quote?
-        var node_type = Util.getNodeType(post_nodes[i]);
+        let node_type = Util.getNodeType(post_nodes[i]);
         if(node_type === 'edit') {
           // There's no text after a "Edited by..." section so end here.
           break;
         } else if(node_type === 'quote') {
           // Is this a quote made by a hellbanned User?
-          var res = post_nodes[i].firstElementChild.textContent.match(posted_by_re); // Determine quotee
+          let res = post_nodes[i].firstElementChild.textContent.match(posted_by_re); // Determine quotee
           under_banned_quote = res && Users.isHellbanned(res[1]);
         }
         if(under_banned_quote) {

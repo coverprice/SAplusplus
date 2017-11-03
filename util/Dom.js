@@ -57,7 +57,8 @@ Util = {
   }
 
   /**
-   * Examines a childnode of an object and returns its "type". This type is used to determine whether it's
+   * Examines a childnode of an object and returns the type of content.
+   *
    * whitespace or another type that requires different processing. "Whitespace" means:
    * - TextContent that is just whitespace (\n, \t, space, etc)
    * - A comment node or other non-tag
@@ -68,6 +69,7 @@ Util = {
    * - 'text' (text content, etc)
    * - 'quote' (means a DIV containing a blockquote)
    * - 'video' (DIV containing a video tag)
+   * - 'tweet' (DIV class="tweet")
    * - 'edit' (The <P> "edited by..." at the end of a post)
    * - 'link' (<A>)
    * - 'image' (<IMG> (not an emoticon))
@@ -101,7 +103,16 @@ Util = {
             && node.firstElementChild.tagName === 'VIDEO') {
           return 'video';
         }
-        return 'text2';
+        if(node.className === "tweet") {
+          return 'tweet';
+        }
+        return 'text';
+
+      case 'SPAN':
+        if(node.className == "timg_container") {
+          return 'image';
+        }
+        return 'text';
 
       case 'BR':
         return 'br';

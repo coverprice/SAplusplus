@@ -5,12 +5,12 @@
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.25
+// @version			1.0.26
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
 // @grant			GM_addStyle
-// @require			http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js
-// @require			http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js
+// @require			https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js
+// @require			https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js
 // @icon			http://forums.somethingawful.com/favicon.ico
 // ==/UserScript==

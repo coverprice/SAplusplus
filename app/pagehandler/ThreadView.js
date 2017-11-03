@@ -115,6 +115,7 @@ ThreadView = {
     let posts_changed = false;
     let is_image_thread = Prefs.isImageThread(this.thread_id);
     let is_quotes_thread = (/quote/i.test(this.thread_title));
+    // Disable low-content filtering in the PYF SA Quotes thread, because people often post just the quotes.
     let enable_low_content_filtering = Prefs.lowcontentposts_filtering_enabled && !is_quotes_thread;
     for(let i = 0; i < this.posts.length; i++) {
       let is_visible = this.posts[i].isVisible(is_image_thread, enable_low_content_filtering);

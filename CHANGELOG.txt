@@ -8,6 +8,12 @@
  * Changelog
  * =========================
  *
+ * V 1.0.26: 2017-11-03
+ * - Bugfix: tweets and timgs were incorrectly considered low-content
+ * - Improvement: UI checkboxes look normal again
+ * - Various JS6 modernizations
+ * - Bumped version of jquery/jquery-ui to match forums
+ *
  * V 1.0.25: 2017-05-11
  * - Video tags (for GIFV files) are considered content.
  *
