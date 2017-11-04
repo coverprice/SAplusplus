@@ -16,17 +16,18 @@ Smilies = {
 
     var resp = [];
     for(var i = 0; i < Math.min(results.length, 12); i++) {
-      var item = results[i];
+      let item = results[i];
+      let title = item.smiley.macro || (':'+item.name+':')
       resp.push({
-        label: '<img src="' + item.smiley.url + '">'
-        , value: (item.smiley.macro || (':'+item.name+':'))
-        });
+        label: '<img src="' + item.smiley.url + '"> ' + title,
+        value: title,
+      });
     };
     if(resp.length === 0) {
       resp.push({
-        label: '<i>No results found</i>'
-        , value: null
-        });
+        label: '<i>No results found</i>',
+        value: null,
+      });
     }
     response(resp);
   }

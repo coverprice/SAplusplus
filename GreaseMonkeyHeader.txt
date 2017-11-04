@@ -5,7 +5,7 @@
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.26
+// @version			1.0.27
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue

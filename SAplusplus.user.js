@@ -5,7 +5,7 @@
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.26
+// @version			1.0.27
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -23,6 +23,9 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.27: 2017-11-03
+ * - Bugfix: Smilies appear properly in the jQueryUI dropdown
  *
  * V 1.0.26: 2017-11-03
  * - Bugfix: tweets and timgs were incorrectly considered low-content
@@ -836,17 +839,18 @@ Smilies = {
 
     var resp = [];
     for(var i = 0; i < Math.min(results.length, 12); i++) {
-      var item = results[i];
+      let item = results[i];
+      let title = item.smiley.macro || (':'+item.name+':')
       resp.push({
-        label: '<img src="' + item.smiley.url + '">'
-        , value: (item.smiley.macro || (':'+item.name+':'))
-        });
+        label: '<img src="' + item.smiley.url + '"> ' + title,
+        value: title,
+      });
     };
     if(resp.length === 0) {
       resp.push({
-        label: '<i>No results found</i>'
-        , value: null
-        });
+        label: '<i>No results found</i>',
+        value: null,
+      });
     }
     response(resp);
   }
