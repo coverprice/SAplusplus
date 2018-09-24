@@ -438,6 +438,7 @@ ThreadView = {
     Page.shrinkGiantImages();
     this.removeNiceButton();
     page_changed |= this.removeImagesFromQuotes(3);
+    $("video").attr("controls", "controls");
 
     this.addPerPostUi(); // i.e. add Hellban button
     
