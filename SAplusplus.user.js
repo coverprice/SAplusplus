@@ -633,6 +633,10 @@ Page = {
       .postbody code {
          color: black;
       }
+      video {
+         max-height: 650px;
+         max-width: 100%;
+      }
       `;
     GM_addStyle(css);
   }
