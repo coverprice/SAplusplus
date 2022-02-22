@@ -5,7 +5,7 @@
 // @downloadURL		https://github.com/coverprice/SAplusplus/raw/master/SAplusplus.user.js
 // @include			https://forums.somethingawful.com/*
 // @include			http://forums.somethingawful.com/*
-// @version			1.0.27
+// @version			1.0.28
 // @grant			GM_openInTab
 // @grant			GM_setValue
 // @grant			GM_getValue
@@ -23,6 +23,10 @@
  * =========================
  * Changelog
  * =========================
+ *
+ * V 1.0.28: 2022-02-21
+ * - Feature: Pressing 'g' in Threadview scrolls to the first unread post.
+ * - Bugfix: Removed buggy auto-scrolling to last read post.
  *
  * V 1.0.27: 2017-11-03
  * - Bugfix: Smilies appear properly in the jQueryUI dropdown
@@ -1538,6 +1542,36 @@ ThreadView = {
     }
   }
 
+  , goToFirstUnreadPost: function () {
+    let first_unread_post = null;
+    for(let i = 0, j = this.posts.length; i < j ; i++) {
+      if(this.posts[i].visible) {
+        // we record the post id of every visible post, but break as soon as we get a visible unread post.
+        // This means that if we don't ever find an unread post, we'll still have the last read post, which
+        // is the next best thing.
+        first_unread_post = this.posts[i];
+        let post = this.posts[i].table;
+        let tr = post.firstElementChild.firstElementChild;
+        if(tr.className.indexOf('altcolor') === 0) {
+          break;
+        }
+      }
+    }
+    if (first_unread_post !== null) {
+      first_unread_post.table.scrollIntoView(true);
+    }
+  }
+
+  , keydownHandler: function (event)  {
+    event.preventDefault();
+    if (event.isComposing || event.keyCode === 229) {   // Prevent handling event if IME is active
+      return;
+    }
+    if (event.code === 'KeyG') {
+      this.goToFirstUnreadPost();
+    }
+  }
+
   /**
   * Adds the image filename to the images title so that it can be easily viewed by mousing over it.
   * This is useful for when a punchline or other useful info is
@@ -1737,8 +1771,8 @@ ThreadView = {
   * Note: This is also called once when the page inits, so don't use the 'event' parameter.
   */
   , hashChangeHandler: function(event) {
-      let hash = window.location.hash;
-    if(!(/#post\d+/.test(hash))) {
+    let hash = window.location.hash;
+    if(!(/^#post\d+$/.test(hash))) {
       return;
     }
     let post_id = parseInt(hash.substr(5));
@@ -1823,7 +1857,9 @@ ThreadView = {
     this.addPerPostUi(); // i.e. add Hellban button
     
     this.calculateQuoteCount();
-    
+
+    document.addEventListener('keydown', Util.bindAsEventHandler(this.keydownHandler, this), false);
+
     if(Prefs.is_hellbanning_enabled) {
       for(let i = 0; i < this.posts.length; i++) {
         page_changed |= this.posts[i].stripHellbannedQuotes();

@@ -8,6 +8,10 @@
  * Changelog
  * =========================
  *
+ * V 1.0.28: 2022-02-21
+ * - Feature: Pressing 'g' in Threadview scrolls to the first unread post.
+ * - Bugfix: Removed buggy auto-scrolling to last read post.
+ *
  * V 1.0.27: 2017-11-03
  * - Bugfix: Smilies appear properly in the jQueryUI dropdown
  *
