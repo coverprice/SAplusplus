@@ -495,19 +495,5 @@ ThreadView = {
     
     $(window).on('hashchange', $.proxy(this.hashChangeHandler, this));
     this.hashChangeHandler(); // highlight the anchored post, if there is one.
-
-    if(page_changed) {
-      //re-anchor to the hash since the page will have jiggled about with all this element removing.
-          if(window.location.hash) {
-        let post = $(window.location.hash);
-        if(post.length) {
-          let coords = post.offset();
-          $("html,body").animate({
-            scrollTop: coords.top,
-            scrollLeft: coords.left
-          });
-        }
-      }
-    }
   }
 };
